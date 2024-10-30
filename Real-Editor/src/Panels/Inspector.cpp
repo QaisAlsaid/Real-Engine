@@ -1,4 +1,7 @@
 #include "Inspector.h"
+#include "EditorEvents/EditorEvents.h"
+#include "Panels/ErrorModal.h"
+#include "Real-Engine/Core/Macros.h"
 #include "Real-Engine/Scene/Components.h"
 #include "glm/trigonometric.hpp"
 #include "imgui.h"
@@ -27,6 +30,10 @@ namespace Real
     }
   }
 
+  Inspector::Inspector()
+  {
+    m_sub_id = EditorEventsManager::subscribe(BIND_EVENT_FUNCTION(Inspector::onEditorEvent));
+  }
 
   void Inspector::onGuiUpdate()
   {
@@ -44,7 +51,8 @@ namespace Real
 
       //export vars
       {
-        drawExportedVars(uuid);
+        if(m_current.hasComponent<ScriptComponent>())
+          drawExportedVars(uuid);
       }
 
       drawComponent<TagComponent>(m_current, "Tag", [](auto* tag_comp, bool removed)
@@ -73,11 +81,19 @@ namespace Real
         }
         if(ImGui::BeginDragDropTarget())
         {
-          if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE2D_ASSET_HANDEL"))
+          if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCRIPT_ASSET_HANDEL"))
           {
             UUID asset_handle = *(UUID*)payload->Data;
             REAL_CORE_WARN("Accepting drag and drop id: {0}", asset_handle);
-            script_comp->script_handle = asset_handle;
+            auto scrp = AssetManager::get<AssetManager::ScriptAsset>(asset_handle);
+            if(scrp->is_valid)
+              script_comp->script_handle = asset_handle;
+            else 
+            {
+              auto r = createARef<ScriptError>(scrp->err);
+              ErrorModal::setContext(r);
+              ErrorModal::show();
+            }
           }
           ImGui::EndDragDropTarget();
         }
@@ -95,8 +111,8 @@ namespace Real
         ImGui::DragFloat3("Rotation", glm::value_ptr(deg_rot), 0.25f);
         rad_rot = glm::radians(deg_rot);
         
-        if(removed)
-          m_current.removeComponent<TransformComponent>();
+        //if(removed)
+        //  m_current.removeComponent<TransformComponent>();
       });
 
       drawComponent<CameraComponent>(m_current, "Camera", [&](auto* cam_comp, bool removed)
@@ -225,7 +241,7 @@ namespace Real
           m_current.removeComponent<RigidBody2DComponent>();
       });
 
-      drawComponent<MovmentComponent>(m_current, "Movment", [&](MovmentComponent* movment_comp, bool removed)
+      /*drawComponent<MovmentComponent>(m_current, "Movment", [&](MovmentComponent* movment_comp, bool removed)
       {
         ImGui::DragFloat3("Linear Velocity", glm::value_ptr(movment_comp->linear_velocity));
         ImGui::DragFloat("Angular Velocity", &movment_comp->angular_velocity);
@@ -233,7 +249,7 @@ namespace Real
         if(removed)
           m_current.removeComponent<MovmentComponent>();
       });
-
+*/
       drawComponent<BoxColliderComponent>(m_current, "Box Collider", [&](auto* bcc, bool removed)
       {
         ImGui::DragFloat2("Offset", glm::value_ptr(bcc->offset));
@@ -295,60 +311,65 @@ namespace Real
 
   void Inspector::drawExportedVars(UUID uuid)
   {
-    const auto* ev = App::get()->getExportVariablesFor(uuid); 
+    const auto* ev = Export::getExportVariablesFor(uuid); 
     if(!ev) return;
-    for(uint32_t i = 0; i < ev->size(); ++i)
+    for(const auto& exp : *ev)
     {
-      const auto& exp = ev->at(i);
       REAL_CORE_WARN("Recived var: {0}", exp.first);
       switch(exp.second.getType())
       {
         case ExportType::Type::Vec4:
         {
           auto* data = exp.second.getAs<Vec4>();
-          ImGui::DragFloat4(exp.first, glm::value_ptr(*data));
+          if(glm::abs(*data) - glm::abs(*data) == glm::vec4(0))
+            ImGui::DragFloat4(exp.first, glm::value_ptr(*data));
           REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
           break;
         }
         case ExportType::Type::Vec3:
         {
           auto* data = exp.second.getAs<Vec3>();
-          ImGui::DragFloat3(exp.first, glm::value_ptr(*data));
+          if(glm::abs(*data) - glm::abs(*data) == glm::vec3(0))
+            ImGui::DragFloat3(exp.first, glm::value_ptr(*data));
           REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
           break;
         }
         case ExportType::Type::Vec2:
         {
+          if(exp.second.getRawData() == nullptr) REAL_CORE_ERROR("Data is null");
           auto* data = exp.second.getAs<Vec2>();
-          ImGui::DragFloat2(exp.first, glm::value_ptr(*data));
+          if(glm::abs(*data) - glm::abs(*data) == glm::vec2(0))
+            ImGui::DragFloat2(exp.first, glm::value_ptr(*data));
           REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
           break;
         }
         case ExportType::Type::Float:
         {
-          auto* data = exp.second.getAs<float>();
-          ImGui::DragFloat(exp.first, data); 
-          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
+          auto* data = exp.second.getAs<Float>();
+          if(std::abs(data->_float) - std::abs(data->_float) == 0.0f)
+            ImGui::DragFloat(exp.first, &data->_float); 
+          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, data->_float);
           break;
         }
         case ExportType::Type::Int:
         {
-          auto* data = exp.second.getAs<int>();
-          ImGui::DragInt(exp.first, data);
-          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
+          auto* data = exp.second.getAs<Int>();
+          if(std::abs(data->_int) - std::abs(data->_int) == 0i)
+            ImGui::DragInt(exp.first, &data->_int);
+          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, data->_int);
           break;
         }
         case ExportType::Type::String:
         {
-          auto* data = exp.second.getAs<std::string>();
+          auto* data = exp.second.getAs<String>();
           char buffer[256];
           memset(buffer, 0, sizeof(buffer));
-          strcpy(buffer, data->c_str());
-          if(ImGui::InputText(("##Var_Name" + std::to_string(uuid)).c_str(), buffer, sizeof(buffer)))
+          strcpy(buffer, data->_string.c_str());
+          if(ImGui::InputText((exp.first + std::string("##") + std::to_string(uuid)).c_str(), buffer, sizeof(buffer)))
           {
             *data = buffer;
           }
-          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
+          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, data->_string);
           break;
         }
         case ExportType::Type::RGBA_Color:
@@ -356,8 +377,48 @@ namespace Real
           ImGui::ColorEdit4(exp.first, glm::value_ptr(*exp.second.getAs<Vec4>()));
           break;
         }
+        case ExportType::Type::Scene:
+        {
+          UUID* data = exp.second.getAs<UUID>();
+          char buffer[1];
+          memset(buffer, 0, sizeof(buffer));
+          strcpy(buffer, "");
+          if(ImGui::InputText((exp.first + std::string("##") + std::to_string(uuid)).c_str(), buffer, sizeof(buffer)))
+          {
+          }
+          if(ImGui::BeginDragDropTarget())
+          {
+            if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_ASSET_HANDEL"))
+            {
+              UUID asset_handle = *(UUID*)payload->Data;
+              REAL_CORE_WARN("Accepting drag and drop id: {0}", asset_handle);
+              auto sc = AssetManager::get<AssetManager::SceneAsset>(asset_handle);
+              if(sc->is_valid)
+                *data = *((UUID*)payload->Data);
+            }
+            ImGui::EndDragDropTarget();
+          }
+          auto sc = AssetManager::get<AssetManager::SceneAsset>(*data);
+          REAL_CORE_ERROR("is valid: {0}", sc->is_valid);
+
+          REAL_CORE_WARN("var; {0}, data: {1}", exp.first, *data);
+          break;
+
+        }
         default: break;
       }
     }
+  }
+
+  void Inspector::onEditorEvent(EditorEvent& e)
+  {
+    EditorEventDispatcher dp(e);
+    dp.dispatch<SCHPSelectionChangedEvent>(BIND_EVENT_FUNCTION(Inspector::onSCHPSelectionChangedEvent));
+  }
+
+  bool Inspector::onSCHPSelectionChangedEvent(SCHPSelectionChangedEvent& e)
+  {
+    m_current = e.getEntity();
+    return false;
   }
 }

@@ -5,11 +5,12 @@
 #include "Real-Engine/Core/Math/math.h"
 #include "Real-Engine/Core/Timestep.h"
 #include "Real-Engine/Core/UUID.h"
+#include "box2d/id.h"
 #include <entt/entt.hpp>
 
 
 
-class b2World;
+struct b2WorldId;
 
 namespace Real
 {
@@ -46,6 +47,9 @@ namespace Real
     Entity getEntity(const std::string& name);
     Entity getEntity(UUID id);
 
+    uint32_t getViewportWidth()  { return m_viewport_width;  };
+    uint32_t getViewportHeight() { return m_viewport_height; };
+
     void onLoad();
     void onStart();
     void onUpdate(Timestep ts);
@@ -53,10 +57,25 @@ namespace Real
     void setEditorCamera(const Mat4& view, const Mat4& projection) { m_editor_camera = { view, projection }; };
     void onViewportResize(uint32_t width, uint32_t height);
     void onEnd();
+    
+    void setName(const std::string& name) { m_name = name; }
+    std::string getName() const           { return m_name; }
+
+    UUID getUUID() { return m_id; }
+
+    inline bool operator==(const Scene& rhs)
+    {
+      return this->m_id == rhs.m_id;
+    }
+    inline bool operator!=(const Scene& rhs)
+    {
+      return this->m_id != rhs.m_id;
+    }
   private:
     std::string m_name;
+    UUID m_id;
     entt::registry m_registry;
-    b2World* m_physics_world = nullptr;
+    b2WorldId m_physics_world = b2_nullWorldId;
     uint32_t m_viewport_width = 1280, m_viewport_height = 720;
     EditorCamera m_editor_camera;
                                 //     Entity
@@ -66,6 +85,11 @@ namespace Real
     friend class SceneHierarchy;
     friend class SceneSerializer;
   };
+
+  bool operator==(const ARef<Scene>& lhs, const ARef<Scene>& rhs);
+
+  bool operator!=(const ARef<Scene>& lhs, const ARef<Scene>& rhs);
+
 }
 
 

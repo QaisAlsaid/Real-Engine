@@ -27,7 +27,7 @@ namespace Real
 
     float aspect_ratio = 16.0f/9.0f;
     float near = 0.1f, far = 1000.0f;
-    float mouse_sensitivaty = 0.01f;
+    float mouse_sensitivaty = 0.1f;
     float min_fov = glm::radians(0.1f), max_fov = pi / 2.0f;
     float yaw = -pi/2.0f, pitch = 0;
     float fov = pi/4.0f;

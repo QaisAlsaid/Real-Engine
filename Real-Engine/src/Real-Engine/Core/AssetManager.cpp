@@ -1,13 +1,18 @@
+#include <pch.h>
 #include "AssetManager.h"
+#include "Real-Engine/Core/App.h"
+#include "Real-Engine/Core/Core.h"
+#include "Real-Engine/Core/Events/Events.h"
+#include "Real-Engine/Core/Log.h"
 #include "Real-Engine/Scene/Components.h"
 #include "Real-Engine/Scene/Scene.h"
 #include "Real-Engine/Scene/SceneSerializer.h"
 #include "Real-Engine/Scripting/Lua.h"
 #include "Real-Engine/Scripting/Script.h"
+#include "Real-Engine/Project/Project.h"
+#include "AssetManagerSerializer.h"
 
 #include <pugixml.hpp>
-#include <string>
-#include <system_error>
 
 
 namespace Real
@@ -15,72 +20,34 @@ namespace Real
   const ARef<AssetManager::Asset> AssetManager::Asset::invalid = createARef<AssetManager::Asset>(false);
   AssetManager* AssetManager::s_instance = new AssetManager;
 
-  bool AssetManager::loadConfig(const std::string& path)
+  bool AssetManager::loadConfig(const std::filesystem::path& path)
   {
-    pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(path.c_str(),
-    pugi::parse_default | pugi::parse_declaration);
-    if (!result)
-    {
-      REAL_CORE_ERROR("Parse Error at: {0}, offset: {1}",result.description(), result.offset);
-      return false;
-    }
-    
-    auto assets = doc.child("Assets");
-    for(auto asset : assets)
-    {
-      std::string uuid_str = asset.child_value("UUID");
-      if(uuid_str.empty())
-      {
-        REAL_CORE_WARN("(AssetManager): Trying to Load Asset with no UUID");
-        continue;
-      }
-      auto meta_n = asset.child("Meta");
-      std::string path = meta_n.child_value("Path");
-      if(path.empty())
-      {
-        REAL_CORE_WARN("(AssetManager): Trying to Load Asset: {0} with no Meta::Path", uuid_str);
-        continue;
-      }
-      std::string type_str = meta_n.child_value("Type");
-      if(type_str.empty())
-      {
-        REAL_CORE_WARN("(AssetManager): Trying to Load Asset: {0} with no Meta::Type", uuid_str);
-        continue;
-      }
-      
-      UUID uuid = std::stoll(uuid_str);
-      if(uuid == UUID::invalid) uuid = UUID();
-      Asset::Type type = Asset::Type::None;
-      if(type_str == "Texture2D") type = Asset::Type::Texture2D; 
-      else if(type_str == "Scene") type = Asset::Type::Scene;
-      else if(type_str == "Script") type = Asset::Type::Script;
-      else { REAL_CORE_WARN("(AssetManager): invalid Asset::Type from Asset: {0}", uuid_str); continue; }
+    return AssetManagerSerializer::deserialize(path);
+  }
 
-      Asset::Meta meta;
-      meta.path = path;
-      meta.type = type;
-      REAL_CORE_WARN("START LOADING ASSET: {0}", meta.path);
-      load(meta, uuid);
-      REAL_CORE_WARN("DONE");
-    }
- 
-    return true;
+  bool AssetManager::saveConfig(const std::filesystem::path& path)
+  {
+    return AssetManagerSerializer::serialize(path);
   }
 
   bool AssetManager::AssetLoader::loadTexture2D(const ARef<Texture2DAsset>& asset)
   {
-    asset->texture = Texture2D::create(asset->meta.path);
+    const auto& abs_asset_dir = Project::getConfig().proj_dir/Project::getConfig().asset_dir;
+    REAL_CORE_ERROR("final path: {0}", abs_asset_dir/asset->meta.path);
+    asset->texture = Texture2D::create((abs_asset_dir/asset->meta.path).string());
     if(asset->onReload)
       asset->onReload();
+    
+    REAL_CORE_ERROR("done loading it");
     return true;
   }
 
   bool AssetManager::AssetLoader::loadScene(const ARef<SceneAsset>& asset)
   {
+    const auto& abs_asset_dir = Project::getConfig().proj_dir/Project::getConfig().asset_dir;
     asset->scene = createARef<Scene>();
     SceneSerializer ss(asset->scene);
-    if(!ss.deSerializeText(asset->meta.path.c_str()))
+    if(!ss.deSerializeText((abs_asset_dir/asset->meta.path).string().c_str()))
       return false;
     if(asset->onReload)
       asset->onReload();
@@ -89,8 +56,28 @@ namespace Real
 
   bool AssetManager::AssetLoader::loadScript(const ARef<ScriptAsset>& asset)
   {
+    const auto& abs_asset_dir = Project::getConfig().proj_dir/Project::getConfig().asset_dir;
     auto& lua = Lua::get();
-    lua.safe_script_file(asset->meta.path);
+    //lua.safe_script_file(asset->meta.path);
+    auto err = Lua::runScript((abs_asset_dir/asset->meta.path).string());
+    asset->err = err;
+    auto aerr = createARef<ScriptError>(err);
+    ScriptErrorEvent e(aerr);
+    EventDispatcher dp(e);
+    dp.dispatch<ScriptErrorEvent>([&](auto& e){ App::get()->onEvent(e) ; return false;} );
+    auto is_error = false;
+    if(err.load_status != ScriptError::LoadErrorCode::ok)
+    {
+      REAL_CORE_ERROR("Error loading Script: path: {0}, Error Code: {1}, Error Message: {2}", 
+          asset->meta.path, err.loadECtoString(err.load_status), err.load_error_message);
+      is_error = true;
+    }
+    if(err.status != ScriptError::ErrorCode::ok)
+    {
+      REAL_CORE_ERROR("Error in Script: path: {0}, Error Code: {1}, Error Message: {2}", 
+          asset->meta.path, err.ECtoString(err.status), err.error_message);
+      is_error = true;
+    }
     auto res = lua["GetObject"];
     if(res.valid())
     {
@@ -101,8 +88,9 @@ namespace Real
     {
       sol::error e = res;
       REAL_CORE_ERROR("{0}", e.what());
-      return false;
+      is_error = true;
     }
+    asset->is_valid = !is_error;
     if(asset->onReload)
       asset->onReload();
     return true;

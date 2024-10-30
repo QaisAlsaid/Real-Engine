@@ -5,7 +5,8 @@
 
 namespace Real
 {
-  //temp TODO:remove this once you have a proper file/asset manager
+  //temp TODO:remove this once you have a proper file/asset manager 
+  //future: why? :-)
   static std::string processFilters(const char* kr_filters, FileDialogs::OpType type);
   static void split(const std::string& str, std::vector<std::string>& cont, char sep) 
   {
@@ -27,6 +28,23 @@ namespace Real
   std::string FileDialogs::SaveFile(const char* filters, const char* prev)
   {
     return processFilters(filters, OpType::SaveFile);
+  }
+
+  std::string FileDialogs::OpenDir()
+  {
+    bool stats = true;
+    char filename[BUFSIZ];
+    auto *f = popen("zenity --file-selection --directory", "r");
+    if(fgets(filename, sizeof(filename), f) == nullptr)
+      stats = false;
+    int res = pclose(f);
+    if(!stats && res < 0)
+    {
+      REAL_CORE_ERROR("Can't Open File Dialog");
+      return std::string();
+    }
+    std::string str_bsn(filename);
+    return str_bsn.substr(0, str_bsn.size() - 1);
   }
 
 
@@ -97,6 +115,7 @@ namespace Real
         std::string str_bsn(filename);
         return str_bsn.substr(0, str_bsn.size() - 1);
       }
+      default: return "";
     }
     REAL_CORE_ERROR("Invalid OpType {0}", (int)type);
     return std::string();

@@ -3,37 +3,37 @@
   <ColorScheme>
     <Color>
       <For>TitleBgActive</For>
-      <Red>58.650002</Red>
-      <Green>66.299995</Green>
-      <Blue>81.599998</Blue>
+      <Red>20.650002</Red>
+      <Green>20.299995</Green>
+      <Blue>20.599998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>TitleBg</For>
-      <Red>38.250000</Red>
-      <Green>39.270000</Green>
-      <Blue>36.974998</Blue>
+      <Red>40.250000</Red>
+      <Green>40.270000</Green>
+      <Blue>40.974998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>TabUnfocused</For>
-      <Red>17.850000</Red>
-      <Green>51.000000</Green>
-      <Blue>33.149998</Blue>
+      <Red>40.849998</Red>
+      <Green>40.000000</Green>
+      <Blue>40.149998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>TabHovered</For>
-      <Red>76.500000</Red>
-      <Green>86.700005</Green>
-      <Blue>89.250000</Blue>
+      <Red>120.500000</Red>
+      <Green>120.700005</Green>
+      <Blue>120.250000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>FrameBgActive</For>
-      <Red>43.350002</Red>
-      <Green>25.500000</Green>
-      <Blue>48.450001</Blue>
+      <Red>155.350006</Red>
+      <Green>155.500000</Green>
+      <Blue>155.449997</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
@@ -45,23 +45,23 @@
     </Color>
     <Color>
       <For>ButtonActive</For>
-      <Red>38.250000</Red>
-      <Green>38.250000</Green>
-      <Blue>38.250000</Blue>
+      <Red>155.250000</Red>
+      <Green>155.250000</Green>
+      <Blue>155.250000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>ButtonHovered</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>76.500000</Blue>
+      <Red>80.500000</Red>
+      <Green>80.500000</Green>
+      <Blue>80.500000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>Button</For>
-      <Red>51.000000</Red>
-      <Green>51.000000</Green>
-      <Blue>51.000000</Blue>
+      <Red>40.000000</Red>
+      <Green>40.000000</Green>
+      <Blue>40.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
@@ -129,30 +129,30 @@
     </Color>
     <Color>
       <For>ScrollbarGrabActive</For>
-      <Red>102.000000</Red>
-      <Green>102.000000</Green>
-      <Blue>153.000000</Blue>
+      <Red>70.000000</Red>
+      <Green>100.000000</Green>
+      <Blue>200.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>BorderShadow</For>
-      <Red>25.500000</Red>
-      <Green>25.500000</Green>
-      <Blue>25.500000</Blue>
-      <Alpha>178.500000</Alpha>
+      <Red>0.000000</Red>
+      <Green>0.000000</Green>
+      <Blue>0.000000</Blue>
+      <Alpha>0.000000</Alpha>
     </Color>
     <Color>
       <For>ScrollbarBg</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>81.599998</Blue>
+      <Red>128.500000</Red>
+      <Green>128.500000</Green>
+      <Blue>128.599991</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>TabUnfocusedActive</For>
-      <Red>53.549999</Red>
-      <Green>58.650002</Green>
-      <Blue>56.099998</Blue>
+      <Red>40.549999</Red>
+      <Green>40.650002</Green>
+      <Blue>40.099998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
@@ -164,16 +164,16 @@
     </Color>
     <Color>
       <For>FrameBg</For>
-      <Red>51.000000</Red>
-      <Green>51.000000</Green>
-      <Blue>51.000000</Blue>
+      <Red>33.000000</Red>
+      <Green>33.000000</Green>
+      <Blue>33.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>CheckMark</For>
-      <Red>102.000000</Red>
-      <Green>119.849998</Green>
-      <Blue>102.000000</Blue>
+      <Red>80.000000</Red>
+      <Green>140.849991</Green>
+      <Blue>80.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
@@ -185,16 +185,16 @@
     </Color>
     <Color>
       <For>PopupBg</For>
-      <Red>81.599998</Red>
-      <Green>51.000000</Green>
-      <Blue>51.000000</Blue>
+      <Red>25.599998</Red>
+      <Green>25.000000</Green>
+      <Blue>25.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>TitleBgCollapsed</For>
-      <Red>11.250000</Red>
-      <Green>11.599998</Green>
-      <Blue>49.900009</Blue>
+      <Red>20.250000</Red>
+      <Green>20.599998</Green>
+      <Blue>20.900009</Blue>
       <Alpha>150.000000</Alpha>
     </Color>
     <Color>
@@ -208,35 +208,35 @@
       <For>ChildBg</For>
       <Red>25.500000</Red>
       <Green>25.500000</Green>
-      <Blue>30.599998</Blue>
+      <Blue>25.599998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>ScrollbarGrabHovered</For>
-      <Red>127.500000</Red>
-      <Green>127.500000</Green>
-      <Blue>127.500000</Blue>
+      <Red>105.500000</Red>
+      <Green>105.500000</Green>
+      <Blue>105.500000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>HeaderHovered</For>
-      <Red>51.000000</Red>
-      <Green>51.000000</Green>
-      <Blue>51.000000</Blue>
+      <Red>80.000000</Red>
+      <Green>80.000000</Green>
+      <Blue>80.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>HeaderActive</For>
-      <Red>43.350002</Red>
-      <Green>43.350002</Green>
-      <Blue>43.350002</Blue>
+      <Red>155.350006</Red>
+      <Green>155.350006</Green>
+      <Blue>155.350006</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>ScrollbarGrab</For>
-      <Red>102.000000</Red>
-      <Green>102.000000</Green>
-      <Blue>109.650002</Blue>
+      <Red>79.000000</Red>
+      <Green>79.000000</Green>
+      <Blue>79.650002</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
@@ -248,31 +248,31 @@
     </Color>
     <Color>
       <For>Header</For>
-      <Red>81.599998</Red>
-      <Green>81.599998</Green>
-      <Blue>99.449997</Blue>
+      <Red>40.599998</Red>
+      <Green>40.599998</Green>
+      <Blue>40.449997</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>TabActive</For>
-      <Red>58.650002</Red>
-      <Green>63.750000</Green>
-      <Blue>45.900002</Blue>
+      <Red>120.650002</Red>
+      <Green>120.750000</Green>
+      <Blue>120.900002</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>SliderGrabActive</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>102.000000</Blue>
+      <Red>70.500000</Red>
+      <Green>100.500000</Green>
+      <Blue>200.000000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>Border</For>
-      <Red>114.750000</Red>
-      <Green>114.750000</Green>
-      <Blue>137.700012</Blue>
-      <Alpha>255.000000</Alpha>
+      <Red>255.000000</Red>
+      <Green>255.000000</Green>
+      <Blue>255.000000</Blue>
+      <Alpha>50.000000</Alpha>
     </Color>
     <Color>
       <For>Separator</For>
@@ -283,30 +283,30 @@
     </Color>
     <Color>
       <For>Tab</For>
-      <Red>35.700001</Red>
-      <Green>43.350002</Green>
-      <Blue>33.149998</Blue>
+      <Red>40.700001</Red>
+      <Green>40.350002</Green>
+      <Blue>40.149998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>SeparatorHovered</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>76.500000</Blue>
+      <Red>175.500000</Red>
+      <Green>175.500000</Green>
+      <Blue>175.500000</Blue>
       <Alpha>229.500000</Alpha>
     </Color>
     <Color>
       <For>ResizeGripActive</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>178.500000</Blue>
+      <Red>70.500000</Red>
+      <Green>100.500000</Green>
+      <Blue>200.500000</Blue>
       <Alpha>204.000000</Alpha>
     </Color>
     <Color>
       <For>ResizeGrip</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>127.500000</Blue>
+      <Red>100.500000</Red>
+      <Green>100.500000</Green>
+      <Blue>100.500000</Blue>
       <Alpha>153.000000</Alpha>
     </Color>
     <Color>
@@ -318,23 +318,23 @@
     </Color>
     <Color>
       <For>DockingEmptyBg</For>
-      <Red>81.599998</Red>
-      <Green>81.599998</Green>
-      <Blue>81.599998</Blue>
+      <Red>26.599998</Red>
+      <Green>26.599998</Green>
+      <Blue>26.599998</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>SliderGrab</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>76.500000</Blue>
+      <Red>174.500000</Red>
+      <Green>174.500000</Green>
+      <Blue>174.500000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
       <For>SeparatorActive</For>
-      <Red>76.500000</Red>
-      <Green>109.650002</Green>
-      <Blue>76.500000</Blue>
+      <Red>200.500000</Red>
+      <Green>200.650009</Green>
+      <Blue>200.500000</Blue>
       <Alpha>255.000000</Alpha>
     </Color>
     <Color>
@@ -353,9 +353,9 @@
     </Color>
     <Color>
       <For>ResizeGripHovered</For>
-      <Red>76.500000</Red>
-      <Green>76.500000</Green>
-      <Blue>153.000000</Blue>
+      <Red>176.500000</Red>
+      <Green>176.500000</Green>
+      <Blue>176.000000</Blue>
       <Alpha>178.500000</Alpha>
     </Color>
     <Color>

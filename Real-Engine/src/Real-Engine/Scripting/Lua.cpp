@@ -45,6 +45,46 @@ namespace Real
   sol::state Lua::lua = sol::state{};
   sol::table Lua::real = sol::table{};
   
+  std::string ScriptError::ECtoString(ScriptError::ErrorCode ec)
+  {
+    return sol::to_string(sol::call_status(ec));
+  }
+
+  std::string ScriptError::loadECtoString(ScriptError::LoadErrorCode lec)
+  {
+    return sol::to_string(sol::load_status(lec));
+  }
+
+  ScriptError::ErrorCode ScriptError::toEC(sol::call_status cs)
+  {
+    switch(cs)
+    {
+      case sol::call_status::ok      : return ErrorCode::ok;
+      case sol::call_status::gc      : return ErrorCode::gc;
+      case sol::call_status::file    : return ErrorCode::file;
+      case sol::call_status::memory  : return ErrorCode::memory;
+      case sol::call_status::syntax  : return ErrorCode::syntax;
+      case sol::call_status::handler : return ErrorCode::handler;
+      case sol::call_status::runtime : return ErrorCode::runtime;
+      case sol::call_status::yielded : return ErrorCode::yielded;
+    }
+    return ErrorCode::ok;
+  }
+
+  ScriptError::LoadErrorCode ScriptError::toLEC(sol::load_status ls)
+  {
+    switch(ls)
+    {
+      case sol::load_status::ok      : return LoadErrorCode::ok;
+      case sol::load_status::gc      : return LoadErrorCode::gc;
+      case sol::load_status::file    : return LoadErrorCode::file;
+      case sol::load_status::memory  : return LoadErrorCode::memory;
+      case sol::load_status::syntax  : return LoadErrorCode::syntax;
+
+    }
+    return LoadErrorCode::ok;
+  }
+
   void Lua::init()
   {
     lua.open_libraries();
@@ -132,6 +172,55 @@ namespace Real
 */
   }
 
+  ScriptError Lua::runScript(const std::string& path)
+  {
+    ScriptError e;
+    sol::protected_function_result result
+		     = lua.script_file(path, sol::script_pass_on_error);
+		if(!result.valid()) 
+    {
+			sol::error err = result;
+			sol::call_status status = result.status();
+			e.status = ScriptError::toEC(status);
+			e.error_message = err.what();
+      e.load_status = ScriptError::LoadErrorCode::ok;
+      e.load_error_message = "none";
+		} return e; 
+
+  
+    /*
+    ScriptError sc_err;
+
+    sol::load_result loaded_chunk = lua.load_file(path);
+		//SOL_ASSERT(!loaded_chunk.valid());
+		if(!loaded_chunk.valid()) 
+    {
+			sol::error err = loaded_chunk;
+			sol::load_status status = loaded_chunk.status();
+		  sc_err.load_status = ScriptError::toLEC(status);
+      sc_err.load_error_message = err.what();
+    }
+		else 
+    {
+			// Because the syntax is bad, this will never be
+			// reached
+			//SOL_ASSERT(false);
+			// If there is a runtime error (lua GC memory
+			// error, nil access, etc.) it will be caught here
+			sol::protected_function script_func = loaded_chunk.get<sol::protected_function>();
+			sol::protected_function_result result = script_func();
+			if(!result.valid()) 
+      {
+				sol::error err = result;
+				sol::call_status status = result.status();
+			  sc_err.status = ScriptError::toEC(status);
+        sc_err.error_message = err.what();
+      }
+		}
+    return sc_err;
+  */
+  }
+
   void Lua::initCore()
   {
     //App:
@@ -211,7 +300,7 @@ namespace Real
       asset_manager["get"] = sol::resolve<ARef<AssetManager::Asset>(UUID)>(&AssetManager::get);
       asset_manager["getTexture2D"] = sol::resolve<ARef<AssetManager::Texture2DAsset>(UUID)>(&AssetManager::get<AssetManager::Texture2DAsset>);
       asset_manager["getScene"] = sol::resolve<ARef<AssetManager::SceneAsset>(UUID)>(&AssetManager::get<AssetManager::SceneAsset>);
-      asset_manager["getScript"] = sol::resolve<ARef<AssetManager::SceneAsset>(UUID)>(&AssetManager::get<AssetManager::SceneAsset>);
+      asset_manager["getScript"] = sol::resolve<ARef<AssetManager::ScriptAsset>(UUID)>(&AssetManager::get<AssetManager::ScriptAsset>);
       asset_manager["getUUID"] = &AssetManager::getUUID;
       asset_manager["loadConfig"] = &AssetManager::loadConfig;
       asset_manager["load"] = sol::overload(
@@ -239,15 +328,21 @@ namespace Real
           "Script", AssetManager::Asset::Type::Script);
       
       //Texture2DAsset
-      sol::usertype<AssetManager::Texture2DAsset> t2d_asset = real.new_usertype<AssetManager::Texture2DAsset>("Texture2DAsset");
+      sol::usertype<AssetManager::Texture2DAsset> t2d_asset = 
+        real.new_usertype<AssetManager::Texture2DAsset>("Texture2DAsset", 
+            sol::base_classes, sol::bases<AssetManager::Asset>());
       t2d_asset["texture"] = &AssetManager::Texture2DAsset::texture;
       
       //SceneAsset
-      sol::usertype<AssetManager::SceneAsset> scene_asset = real.new_usertype<AssetManager::SceneAsset>("SceneAsset");
+      sol::usertype<AssetManager::SceneAsset> scene_asset = 
+        real.new_usertype<AssetManager::SceneAsset>("SceneAsset", 
+            sol::base_classes, sol::bases<AssetManager::Asset>());
       scene_asset["scene"] = &AssetManager::SceneAsset::scene;
       
       //ScriptAsset
-      sol::usertype<AssetManager::ScriptAsset> script_asset = real.new_usertype<AssetManager::ScriptAsset>("ScriptAsset");
+      sol::usertype<AssetManager::ScriptAsset> script_asset = 
+        real.new_usertype<AssetManager::ScriptAsset>("ScriptAsset",
+            sol::base_classes, sol::bases<AssetManager::Asset>());
       script_asset["script"] = &AssetManager::ScriptAsset::script;
     }
 
@@ -264,6 +359,22 @@ namespace Real
   //stpq
   void Lua::initMath()
   {
+    //primitives
+    {
+      //Float
+      sol::usertype<Float> f = real.new_usertype<Float>("Float", sol::constructors<Float(float)>());
+      f["float"] = &Float::_float;
+
+      //Int32
+      sol::usertype<Int> i = real.new_usertype<Int>("Int", sol::constructors<Int(int32_t)>());
+      i["int"] = &Int::_int;
+
+      //String 
+      sol::usertype<String> s = real.new_usertype<String>("String", sol::constructors<String(const char*)>());
+      s["string"] = &String::_string;
+
+    }
+
     //Vec4
     {
       //usertype
@@ -544,11 +655,6 @@ namespace Real
             ));
       real.set_function("cross", sol::overload(
             sol::resolve<Vec3(const Vec3&, const Vec3&)>(&glm::cross)
-            //sol::resolve<Vec2(const Vec2&, const Vec2&)>([](const Vec2& _1, const Vec2& _2) {
-            //    //cross product is defined in 2D and useful in ray casting 
-            //    //TODO: make it
-            //    return Vec2(0);
-            //  }) 
             ));
       real.set_function("length", sol::overload(
             sol::resolve<float(const Vec4&)>(&glm::length), 
@@ -639,7 +745,6 @@ namespace Real
 
   void Lua::initScene()
   {
-    REAL_CORE_WARN("We reached initScene");
     //components
     {
       sol::table comps = real["Components"].get_or_create<sol::table>();
@@ -671,7 +776,6 @@ namespace Real
 
       //SpriteComponent
       {
-        //no constructors because it will change soon (with the asset manager)
         sol::usertype<SpriteComponent> sprite = comps.new_usertype<SpriteComponent>("Sprite", 
             sol::constructors<SpriteComponent(const Vec4& ,UUID)>());
         sprite["color"]   = &SpriteComponent::color;
@@ -713,8 +817,34 @@ namespace Real
       //MovmentComponent
       {
         sol::usertype<MovmentComponent> mc = comps.new_usertype<MovmentComponent>("Movment");
-        mc["linear_velocity"]  = &MovmentComponent::linear_velocity;
-        mc["angular_velocity"] = &MovmentComponent::angular_velocity;
+        mc["new_transform"]  = &MovmentComponent::new_transform;
+        mc["new_angle"] = &MovmentComponent::new_angle;
+      }
+
+      //LinearImpulseComponent
+      {
+        sol::usertype<LinearImpulseComponent> lic = comps.new_usertype<LinearImpulseComponent>("LinearImpulse");
+        lic["magnitude"] = &LinearImpulseComponent::magnitude;
+        lic["point"] = &LinearImpulseComponent::point;
+      }
+
+      //ForceComponent
+      {
+        sol::usertype<ForceComponent> fc = comps.new_usertype<ForceComponent>("Force");
+        fc["magnitude"] = &ForceComponent::magnitude;
+        fc["point"] = &ForceComponent::point;
+      }
+
+      //AngularImpulseComponent
+      {
+        sol::usertype<AngularImpulseComponent> aic = comps.new_usertype<AngularImpulseComponent>("AngularImpulse");
+        aic["magnitude"] = &AngularImpulseComponent::magnitude;
+      }
+      
+      //TorqueComponent
+      {
+        sol::usertype<TorqueComponent> aic = comps.new_usertype<TorqueComponent>("Torque");
+        aic["magnitude"] = &TorqueComponent::magnitude;
       }
 
       //BoxColliderComponent
@@ -763,6 +893,7 @@ namespace Real
     //Scene
     {
       sol::usertype<Scene> scene_obj = real.new_usertype<Scene>("Scene");
+      scene_obj["getName"]      = &Scene::getName;
       scene_obj["addEntity"]    = sol::resolve<Entity(const std::string&)>(&Scene::addEntity); 
       scene_obj["copyEntity"]   = &Scene::copyEntity;
       scene_obj["removeEntity"] = &Scene::removeEntity;
@@ -786,6 +917,10 @@ namespace Real
       ADD_COMPONENT_FUNCTIONS(Movment);
       ADD_COMPONENT_FUNCTIONS(BoxCollider);
       ADD_COMPONENT_FUNCTIONS(CircleCollider);
+      ADD_COMPONENT_FUNCTIONS(LinearImpulse);
+      ADD_COMPONENT_FUNCTIONS(Force);
+      ADD_COMPONENT_FUNCTIONS(AngularImpulse);
+      ADD_COMPONENT_FUNCTIONS(Torque);
       
       sol::usertype<Entity> entity = real.new_usertype<Entity>("Entity", 
           sol::constructors<Entity(uint64_t, Scene*)>()
@@ -805,6 +940,10 @@ namespace Real
       REGESTER_COMPONENT_FUNCTIONS(Movment, entity);
       REGESTER_COMPONENT_FUNCTIONS(BoxCollider, entity);
       REGESTER_COMPONENT_FUNCTIONS(CircleCollider, entity);
+      REGESTER_COMPONENT_FUNCTIONS(LinearImpulse, entity);
+      REGESTER_COMPONENT_FUNCTIONS(Force, entity);
+      REGESTER_COMPONENT_FUNCTIONS(AngularImpulse, entity);
+      REGESTER_COMPONENT_FUNCTIONS(Torque, entity);
     }
 
     REAL_CORE_WARN("We exited initScene");
@@ -857,46 +996,71 @@ namespace Real
 
   void Lua::initScripting()
   {
-    REAL_CORE_WARN("init Script started");
     sol::usertype<Script> script = real.new_usertype<Script>("Script");
     script["onCreate"] = &Script::onCreate;
     script["onUpdate"] = &Script::onUpdate;
     script["onDestroy"] = &Script::onDestroy;
+    script["setExport"] = &Script::setExport;
     script["entity"] = &Script::entity;
     script["getTimestep"] = &Script::getTimestep;
     
     script["export"] = sol::overload(
             [](Script* _this, const char* as, Vec4* v4){
-              App::get()->pushExportVariable(as, { ExportType::Type::Vec4, v4 },
+              Export::pushExportVariable(as, { ExportType::Type::Vec4, v4 },
                   _this->entity.getComponent<IDComponent>().ID);
               }, 
             [](Script* _this, const char* as, Vec3* v3){
-              App::get()->pushExportVariable(as, { ExportType::Type::Vec3, v3 }, 
+              Export::pushExportVariable(as, { ExportType::Type::Vec3, v3 }, 
                   _this->entity.getComponent<IDComponent>().ID);
               }, 
             [](Script* _this, const char* as, Vec2* v2){
-              App::get()->pushExportVariable(as, { ExportType::Type::Vec2, v2 }, 
+              Export::pushExportVariable(as, { ExportType::Type::Vec2, v2 }, 
                   _this->entity.getComponent<IDComponent>().ID);
               },
               [](Script* _this, const char* as, Vec4* v4, bool dummy){ 
-              App::get()->pushExportVariable(as, { ExportType::Type::RGBA_Color, v4 },
+              Export::pushExportVariable(as, { ExportType::Type::RGBA_Color, v4 },
                   _this->entity.getComponent<IDComponent>().ID);
-              } 
-            //[](Script* _this, const char* as, float* f){
-            //  App::get()->pushExportVariable(as, { ExportType::Type::Float, f }, 
-            //      _this->entity.getComponent<IDComponent>().ID);
-            //  },
-            //[](Script* _this, const char* as, int* i){
-            //  App::get()->pushExportVariable(as, { ExportType::Type::Int, i }, 
-            //      _this->entity.getComponent<IDComponent>().ID);
-            //  },
-            //[](Script* _this, const char* as, const char* s){
-            //  App::get()->pushExportVariable(as, { ExportType::Type::String, s }, 
-            //      _this->entity.getComponent<IDComponent>().ID);  
-            //  }
-    );
+              },  
+            [](Script* _this, const char* as, Float* f){
+              Export::pushExportVariable(as, { ExportType::Type::Float, f }, 
+                  _this->entity.getComponent<IDComponent>().ID);
+             },
+            [](Script* _this, const char* as, String* s){
+              Export::pushExportVariable(as, { ExportType::Type::String, s }, 
+                  _this->entity.getComponent<IDComponent>().ID);  
+              }, 
+            [](Script* _this, const char* as, sol::lua_nil_t* n){
+              Export::pushExportVariable(as, { ExportType::Type::None, n },
+                  _this->entity.getComponent<IDComponent>().ID);
+            }
+          );
 
-    REAL_CORE_WARN("init Script done exited");
+    script["exportEntity"] = [](Script* _this, const char* as, UUID* id)
+    {
+      Export::pushExportVariable(as, { ExportType::Type::Entity, id }, 
+          _this->entity.getComponent<IDComponent>().ID);
+    }; 
+
+    script["exportScene"] = [](Script* _this, const char* as, UUID* id)
+    {
+      Export::pushExportVariable(as, { ExportType::Type::Scene, id }, 
+          _this->entity.getComponent<IDComponent>().ID);
+    }; 
+    script["exportScript"] = [](Script* _this, const char* as, UUID* id)
+    {
+      Export::pushExportVariable(as, { ExportType::Type::Script, id }, 
+          _this->entity.getComponent<IDComponent>().ID);
+    };
+    script["exportTexture"] = [](Script* _this, const char* as, UUID* id)
+    {
+      Export::pushExportVariable(as, { ExportType::Type::Texture, id }, 
+          _this->entity.getComponent<IDComponent>().ID);
+    };
+    script["exportAsset"] = [](Script* _this, const char* as, UUID* id)
+    {
+      Export::pushExportVariable(as, { ExportType::Type::Asset, id }, 
+          _this->entity.getComponent<IDComponent>().ID);
+    }; 
   }
 }
 

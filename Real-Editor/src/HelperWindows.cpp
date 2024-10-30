@@ -9,7 +9,9 @@ namespace Real
   {
     if(is_active)
     {
-      ImGui::Begin("Stats");
+      auto window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+      ImGui::SetNextWindowBgAlpha(0.35f);
+      ImGui::Begin("Stats", &is_active, window_flags);
       ImGui::Text("MainLoop: Timestep: %f", stats.mainloop_time_step.getTime());
       ImGui::Separator();
       ImGui::Text("Renderer2D: Draw Calls: %d", stats.renderer2d_draw_calls_count);

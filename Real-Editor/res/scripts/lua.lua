@@ -1,0 +1,2 @@
+---@meta
+---@class Real

@@ -5,23 +5,24 @@
 #include "Real-Engine/Core/UUID.h"
 #include "Real-Engine/Render/API/Texture.h"
 #include "Real-Engine/Scene/Scene.h"
+#include "Real-Engine/Scripting/Lua.h"
 #include "Real-Engine/Scripting/Script.h"
 #include <string>
 
 
 namespace Real
-{ 
-  class AssetManager 
+{
+  class AssetManager
   {
   public:
-    struct Asset 
+    struct Asset
     {
       Asset() = default;
       Asset(bool is_valid) : is_valid(is_valid) {}
       enum class Type { None = 0, Texture2D, Scene, Script };
-      template<typename T> 
+      template<typename T>
       static Type getTypeEnum();
-      struct Meta 
+      struct Meta
       {
         std::string path;
         Type type;
@@ -30,24 +31,26 @@ namespace Real
       std::function<void(void)> onReload;
       static const ARef<Asset> invalid;
       bool is_valid = true;
-      operator bool() { return is_valid; }  
+      operator bool() { return is_valid; }
     };
 
-    struct Texture2DAsset : public Asset 
+    struct Texture2DAsset : public Asset
     {
       ARef<Texture2D> texture;
     };
 
-    struct SceneAsset : public Asset 
+    struct SceneAsset : public Asset
     {
       ARef<Scene> scene;
     };
 
-    struct ScriptAsset : public Asset 
+    struct ScriptAsset : public Asset
     {
+      //std::string script_path;
       Script* script = nullptr;
+      ScriptError err;
     };
-  
+
     struct AssetLoader
     {
       template<typename T>
@@ -59,10 +62,10 @@ namespace Real
 
   public:
     AssetManager() = default;
-    AssetManager(const std::string& config_path);
+    AssetManager(const std::filesystem::path& config_path);
     static void shutDown();
-    static bool loadConfig(const std::string& path);
-
+    static bool loadConfig(const std::filesystem::path& path);
+    static bool saveConfig(const std::filesystem::path& path);
     static inline ARef<Asset> get(UUID id)
     {
       if(s_instance->m_assets.find(id) != s_instance->m_assets.end())
@@ -74,7 +77,10 @@ namespace Real
     static inline ARef<T> get(UUID id)
     {
       if(s_instance->m_assets.find(id) != s_instance->m_assets.end())
-        return std::static_pointer_cast<T>(s_instance->m_assets.at(id));
+      {
+        if(s_instance->m_assets.at(id)->meta.type == Asset::getTypeEnum<T>())
+          return std::static_pointer_cast<T>(s_instance->m_assets.at(id));
+      }
       return std::static_pointer_cast<T>(Asset::invalid);
     }
 
@@ -109,7 +115,7 @@ namespace Real
       auto asset = createARef<T>();
       asset->meta = meta;
       asset->meta.type = Asset::getTypeEnum<T>();
-      
+
       if(!AssetLoader::load(asset))
       {
         REAL_CORE_ERROR("(AssetManager): Can't Load Asset: {0}", meta.path);
@@ -150,10 +156,10 @@ namespace Real
 
     static UUID loadOrGet(const Asset::Meta& meta)
     {
-      auto id = getUUID(meta.path); 
+      auto id = getUUID(meta.path);
       if(id != UUID::invalid)
         return id;
-      else 
+      else
         return load(meta);
     }
 
@@ -205,11 +211,11 @@ namespace Real
       return true;
     }
 
-    static inline void clear() 
+    static inline void clear()
     {
       s_instance->m_assets.clear();
       s_instance->m_paths.clear();
-    } 
+    }
 
     static inline void remove(UUID id)
     {

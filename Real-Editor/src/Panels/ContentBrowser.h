@@ -13,7 +13,7 @@ namespace Real
   {
   public:
     ContentBrowser(const std::string& res_path);//Should Take Project
-    void onImGuiUpdate();
+    bool onImGuiUpdate();
   private:
     enum class FileType 
     {

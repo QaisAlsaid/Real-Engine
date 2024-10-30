@@ -7,7 +7,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only")
 #set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "Build the Box2D unit tests")
 #set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "Build the Box2D testbed")
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 option(REAL_ENABLE_ASSERT "Enables Assertion" ON)
@@ -50,10 +50,10 @@ set(REAL_SRC src/Real-Engine/Core/App.cpp src/Real-Engine/Core/Log.cpp
     src/Real-Engine/Scene/Scene.cpp src/Real-Engine/Scene/Entity.cpp src/Real-Engine/Scene/SceneCamera.cpp
     src/Real-Engine/Scene/SceneSerializer.cpp src/Platforms/Linux/LinuxFileDialogs.cpp
     src/Real-Engine/Core/AssetManager.cpp src/Real-Engine/Core/Math/math.cpp src/Real-Engine/Core/UUID.cpp
-    src/Platforms/Windows/WindowsFileDialogs.cpp src/Platforms/OpenGl/OpenGlUtils.cpp 
-
-    ./src/Real-Engine/Scripting/Lua.cpp
-    include/Real-Engine/Real-Engine.h
+    src/Platforms/Windows/WindowsFileDialogs.cpp src/Platforms/OpenGl/OpenGlUtils.cpp
+    src/Real-Engine/Project/Project.cpp src/Real-Engine/Project/ProjectSerializer.cpp
+    src/Real-Engine/Scripting/Lua.cpp src/Real-Engine/Core/AssetManagerSerializer.cpp
+    include/Real-Engine/Real-Engine.h src/Real-Engine/Core/Export.cpp
   )
 #set(REAL_SRC_H src/Real-Engine/App.h src/Real-Engine/Log.h src/Platforms/Windows/WindowsWindow.h src/Real-Engine/Layers/Layer.h
 #    src/Real-Engine/Layers/LayerStack.h src/Real-Engine/Layers/GuiLayer.h src/Platforms/Windows/WindowsInput.h
@@ -68,7 +68,7 @@ set(REAL_SRC src/Real-Engine/Core/App.cpp src/Real-Engine/Core/Log.cpp
 #)
 set(REAL_PUBLIC_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/
-  ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include/ 
+  ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/src/
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/entt/single_include/
@@ -78,10 +78,10 @@ set(REAL_PUBLIC_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sol2/include
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Lua/src
-
+  ${CMAKE_CURRENT_SOURCE_DIR}/vendor/IconFontHeaders
   )
  set(REAL_INCLUDE_DIRS ${REAL_PUBLIC_INCLUDE_DIRS} PARENT_SCOPE)
- 
+
  set(REAL_PRIVATE_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw/include
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui/backends
@@ -91,7 +91,7 @@ set(REAL_PUBLIC_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb_image
   ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Box2D/include
-  
+  ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Box2D/src
   )
 if(NOT REAL_EMSCRIPTEN)
 add_subdirectory(vendor/glfw)

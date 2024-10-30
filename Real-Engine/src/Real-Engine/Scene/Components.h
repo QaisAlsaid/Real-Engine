@@ -114,13 +114,42 @@ namespace Real
     float gravity_scale    = 1.0f;
     bool  fixed_rotation   = false;
 
-    b2Body* body = nullptr;
+    b2BodyId body = b2_nullBodyId;
+
+    std::function<void(void)> distruct_function;
+
+    ~RigidBody2DComponent()
+    {
+     // distruct_function();
+    }
   };
 
   struct MovmentComponent 
   {
-    Vec3  linear_velocity  = { 0.0f, 0.0f, 0.0f };
-    float angular_velocity = 0.0f;
+    Vec2 new_transform = Vec2(0);
+    float new_angle = 0;
+  };
+
+  struct LinearImpulseComponent
+  {
+    Vec2 magnitude = Vec2(0);
+    Vec2 point = Vec2(0);
+  };
+
+  struct ForceComponent
+  {
+    Vec2 magnitude = Vec2(0);
+    Vec2 point = Vec2(0);
+  };
+
+  struct AngularImpulseComponent
+  {
+    float magnitude = 0;
+  };
+
+  struct TorqueComponent
+  {
+    float magnitude = 0;
   };
 
   struct REAL_API BoxColliderComponent 
@@ -133,7 +162,14 @@ namespace Real
     float restitution = 0.0f;
     float restitution_threshold = 0.5f;
 
-    b2Fixture* fixture = nullptr;
+    b2ShapeId shape = b2_nullShapeId;
+    
+    std::function<void(void)> distruct_function;
+
+    ~BoxColliderComponent()
+    {
+   //   distruct_function();
+    }
   };
 
   struct REAL_API CircleColliderComponent
@@ -146,7 +182,13 @@ namespace Real
     float restitution = 0.0f;
     float restitution_threshold = 0.5f;
 
-    b2Fixture* fixture = nullptr;
+    b2ShapeId shape = b2_nullShapeId;
+    std::function<void(void)> distruct_function;
+
+    ~CircleColliderComponent()
+    {
+   //   distruct_function();
+    }
   };
 }
 #endif //KR_COMPONENTS_H

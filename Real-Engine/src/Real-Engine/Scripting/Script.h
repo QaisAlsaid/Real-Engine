@@ -13,6 +13,7 @@ namespace Real
     std::function<void(void)> onCreate;
     std::function<void(void)> onUpdate;
     std::function<void(void)> onDestroy;
+    std::function<void(void)> setExport;
     Entity entity;
     Timestep getTimestep() { return timestep; }
   private:

@@ -9,6 +9,7 @@
 #include "Real-Engine/Core/App.h"
 //TODO: remove it
 #include <GLFW/glfw3.h>
+#include "IconsFontAwesome6.h"
 
 namespace Real 
 {
@@ -24,9 +25,16 @@ namespace Real
 
   void GuiLayer::onAttach()
   {
+    //TODO: paths shouldn't be this way fffffffff
     auto& io = ImGui::GetIO();
     io.FontDefault = io.Fonts->AddFontFromFileTTF("../res/fonts/Roboto/Roboto-Regular.ttf", 18);
-  
+
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
+    static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+    io.Fonts->AddFontFromFileTTF("../res/fonts/Font-Awesome/fa-solid-900.ttf", 18.0f, &config, icon_ranges);
+
     auto& colors = ImGui::GetStyle().Colors;
 
     colors[ImGuiCol_WindowBg] = {0.1f, 0.1f, 0.1f, 1.0f};
@@ -115,5 +123,17 @@ namespace Real
 		}
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init();
+  }
+
+  void GuiLayer::onEvent(Event& event)
+  {
+    if(m_blocking)
+    {
+    auto& io = ImGui::GetIO();
+    auto block = (io.WantCaptureMouse && event.isInCategory(EventCategory::CATMouse)) ||
+      (io.WantCaptureKeyboard && event.isInCategory(EventCategory::CATKeyboard));
+    if(block)
+      event.setHandled();
+    }
   }
 }

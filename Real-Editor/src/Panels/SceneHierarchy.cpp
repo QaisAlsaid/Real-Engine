@@ -1,17 +1,38 @@
 #include "SceneHierarchy.h"
+#include "EditorEvents/EditorEvents.h"
+#include "EditorEvents/SceneEvents.h"
+#include "EditorEvents/SceneHierarchyPanelEvents.h"
+#include "Real-Engine/Core/Log.h"
+#include "Real-Engine/Core/Macros.h"
 #include "imgui.h"
 
 
 namespace Real
 {
+  SceneHierarchy::SceneHierarchy()
+  {
+    m_sub_id = EditorEventsManager::subscribe(BIND_EVENT_FUNCTION(SceneHierarchy::onEditorUpdate));
+  }
+
   SceneHierarchy::SceneHierarchy(const ARef<Scene>& context)
   {
+    m_sub_id = EditorEventsManager::subscribe(BIND_EVENT_FUNCTION(SceneHierarchy::onEditorUpdate));
     setContext(context);
   }
 
   void SceneHierarchy::setContext(const ARef<Scene>& context)
   {
     m_context = context;
+    SCHPContextChangedEvent event(context);
+    EditorEventsManager::onEvent(event);
+    setCurrentSelected({});
+  }
+  
+  void SceneHierarchy::setCurrentSelected(Entity e)
+  {
+    m_current = e;
+    SCHPSelectionChangedEvent event(e);
+    EditorEventsManager::onEvent(event);
   }
 
   void SceneHierarchy::onGuiUpdate()
@@ -23,6 +44,7 @@ namespace Real
       ImGui::OpenPopup("SceneContextWindow");
     }
     ImGui::PopItemWidth();
+    
     m_context->m_registry.view<TagComponent>().each([&](auto e, auto& t)
     {
       Entity en(e, m_context.get());
@@ -30,12 +52,12 @@ namespace Real
       ImGui::Begin("__DEBUG__");
       ImGui::Text("id: %u", e);
       ImGui::End();
-
     });
+
     
     if(ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
     {
-      m_current = {};
+      clearSelection();
     }
     auto flags = ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight;
     if(ImGui::BeginPopupContextWindow("SceneContextWindow", flags))
@@ -54,7 +76,7 @@ namespace Real
     bool opend = ImGui::TreeNodeEx((void*)(uintptr_t)e, flags, "%s",tag.c_str());
     if(ImGui::IsItemClicked())
     {
-      m_current = e;
+      setCurrentSelected(e);
     }
     bool deleted = false;
     auto popup_flags = ImGuiPopupFlags_NoOpenOverExistingPopup | ImGuiPopupFlags_MouseButtonRight;
@@ -73,7 +95,35 @@ namespace Real
     {
       e.destroy();
       if(m_current == e)
-        m_current = {};
+        clearSelection();
     }
+  }
+
+  void SceneHierarchy::onEditorUpdate(EditorEvent& e)
+  {
+    EditorEventDispatcher dp(e);
+    dp.dispatch<SceneChangedEvent>(BIND_EVENT_FUNCTION(SceneHierarchy::onSceneChangedCall));
+    dp.dispatch<SceneSetEvent>(BIND_EVENT_FUNCTION(SceneHierarchy::onSceneSetCall));
+    dp.dispatch<MousePickedChangedEvent>(BIND_EVENT_FUNCTION(SceneHierarchy::onMousePickedChangedCalll));
+    dp.dispatch<ScenePlayEvent>([&](ScenePlayEvent& e){ setContext(e.getRuntimeScene()); return false; });
+    dp.dispatch<SceneStopEvent>([&](SceneStopEvent& e){ setContext(e.getRuntimeScene()); return false; });
+  }
+
+  bool SceneHierarchy::onSceneChangedCall(SceneChangedEvent& e)
+  {
+    setContext(e.getNewScene());
+    return false;
+  }
+
+  bool SceneHierarchy::onSceneSetCall(SceneSetEvent& e)
+  {
+    setContext(e.getScene());
+    return false;
+  }
+
+  bool SceneHierarchy::onMousePickedChangedCalll(MousePickedChangedEvent& e)
+  {
+    setCurrentSelected(e.getEntity());
+    return false;
   }
 }

@@ -70,8 +70,8 @@ namespace Real
         m_is_shown = false;
         ImGui::CloseCurrentPopup();
         m_context = UUID::invalid;
+        ImGui::EndPopup();
       }
-      ImGui::EndPopup();
     }
   }
 }

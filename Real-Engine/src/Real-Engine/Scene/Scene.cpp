@@ -9,21 +9,17 @@
 #include "Real-Engine/Scripting/Lua.h"
 
 #include <box2d/box2d.h>
-#include <box2d/b2_world.h>
-#include <box2d/b2_fixture.h>
-#include <box2d/b2_polygon_shape.h>
 
 
 namespace Real
 {
   Scene::Scene(const std::string& name)
-    : m_name(name)
+    : m_name(name), m_id(UUID())
   {
-
   }
 
   Scene::Scene(const Scene& other)
-    : m_name(other.m_name), m_viewport_width(other.m_viewport_width), m_viewport_height(other.m_viewport_height)
+    : m_name(other.m_name), m_id(other.m_id), m_viewport_width(other.m_viewport_width), m_viewport_height(other.m_viewport_height)
   {
     m_fast_access.clear();
     m_fast_access.reserve(other.m_fast_access.size());
@@ -196,10 +192,12 @@ namespace Real
 
   void Scene::onStart()
   {
-    //TODO: FIXME: remove it
-    onLoad();
-    m_physics_world = new b2World({0.0f, -9.8f});
-    
+    // TODO: physics settings
+    b2Vec2 gravity = {0.0f, -9.8f};
+    b2WorldDef worldDef = b2DefaultWorldDef();
+    worldDef.gravity = gravity;
+    m_physics_world = b2CreateWorld(&worldDef);
+
     //scripts might add physics components
     m_registry.view<NativeScriptComponent>().each([&](auto e, auto& native_script)
     {
@@ -221,8 +219,17 @@ namespace Real
       //  script.script->entity = { e, this };
       //  std::cout << "inside Real-Engine::Entity::m_id: " << (uint32_t)script.script->entity << std::endl;
       //  std::cout << "calling onCreate from c++ << ";
-    auto script_ptr = AssetManager::get<AssetManager::ScriptAsset>(script.script_handle);    
-    script_ptr->script->onCreate();
+    
+      
+      auto script_ptr = AssetManager::get<AssetManager::ScriptAsset>(script.script_handle);
+      ScriptErrorEvent err(createARef<ScriptError>(script_ptr->err));
+      EventDispatcher dp(err);
+      dp.dispatch<ScriptErrorEvent>([&](auto& ev){App::get()->onEvent(ev); return false;});
+      if(script_ptr->is_valid)
+      {
+        script_ptr->script->entity = { e, this }; 
+        script_ptr->script->onCreate();
+      }
      //   std::cout << " >> " << std::endl;
      // }
      // else 
@@ -236,88 +243,126 @@ namespace Real
     m_registry.view<TransformComponent, RigidBody2DComponent>().each([&](auto e, TransformComponent& tc, RigidBody2DComponent& rb2dc)
     {
       Entity entity(e, this);
-      b2BodyDef def;
-      def.position = { tc.position.x, tc.position.y };
-      def.type = (b2BodyType)rb2dc.type;
-      def.angle = tc.rotation.z;
-
-      auto* body = m_physics_world->CreateBody(&def);
-      body->SetFixedRotation(rb2dc.fixed_rotation);
-      rb2dc.body = body;
       
+      b2BodyDef def = b2DefaultBodyDef();
+      def.type = b2_dynamicBody;
+      def.type = (b2BodyType)rb2dc.type;
+      def.position = { tc.position.x, tc.position.y };
+      def.rotation.s = std::sin(tc.rotation.z);
+      def.rotation.c = std::cos(tc.rotation.z);
+      def.fixedRotation = rb2dc.fixed_rotation;
+      b2BodyId body = b2CreateBody(m_physics_world, &def);
+      
+      rb2dc.body = body;
+      rb2dc.distruct_function = [&rb2dc](){ b2DestroyBody(rb2dc.body); };
+
       auto* bcc = entity.tryGetComponent<BoxColliderComponent>();
       if(bcc)
       {
-        b2PolygonShape poly;
-        poly.SetAsBox(bcc->size.y * tc.scale.x, bcc->size.x * tc.scale.y);
+        b2Polygon poly;
+        poly = b2MakeBox(bcc->size.y * tc.scale.x, bcc->size.x * tc.scale.y);
         
-        b2FixtureDef fixture_def;
-        fixture_def.shape = &poly;
-        fixture_def.density = bcc->density;
-        fixture_def.friction = bcc->friction;
-        fixture_def.restitution = bcc->restitution;
-        fixture_def.restitutionThreshold = bcc->restitution_threshold;
-        /*auto * fixture = */body->CreateFixture(&fixture_def);
-        //bcc.fixture = fixture;
+        b2ShapeDef shape_def = b2DefaultShapeDef();
+        shape_def.density = bcc->density;
+        shape_def.friction = bcc->friction;
+        shape_def.restitution = bcc->restitution;
+        b2ShapeId shape_id = b2CreatePolygonShape(body, &shape_def, &poly);
+        bcc->shape = shape_id;
+        bcc->distruct_function = [&bcc](){ b2DestroyShape(bcc->shape, false); };
       }
       auto* ccc = entity.tryGetComponent<CircleColliderComponent>();
       if(ccc)
       {
-        b2CircleShape circle;
-        circle.m_radius = ccc->radius;
+        b2Circle circle;
+        circle.radius = ccc->radius;
       
-        b2FixtureDef fixture_def;
-        fixture_def.shape = &circle;
-        fixture_def.density = ccc->density;
-        fixture_def.friction = ccc->friction;
-        fixture_def.restitution = ccc->restitution;
-        fixture_def.restitutionThreshold = ccc->restitution_threshold;
-        body->CreateFixture(&fixture_def);
+        b2ShapeDef shape_def = b2DefaultShapeDef();
+        shape_def.density = ccc->density;
+        shape_def.friction = ccc->friction;
+        shape_def.restitution = ccc->restitution;
+        b2ShapeId shape_id = b2CreateCircleShape(body, &shape_def, &circle);
+        ccc->shape = shape_id;
+        ccc->distruct_function = [&ccc](){ b2DestroyShape(ccc->shape, false); };
       }
     });
   }
 
   void Scene::onUpdate(Timestep ts)
   {
+    REAL_PROFILE_FUNCTION();
     m_registry.view<NativeScriptComponent>().each([&](auto e, auto& native_script)
     {
       native_script.instance->onUpdate(ts);
     });
 
+    {
+    REAL_PROFILE_SCOPE("Script => onUpdate()");
     m_registry.view<ScriptComponent>().each([&](auto e, auto& script)
     {
       const auto& script_ptr = AssetManager::get<AssetManager::ScriptAsset>(script.script_handle);
-      script_ptr->script->entity = { e, this };
-      script_ptr->script->timestep = ts;
-      script_ptr->script->onUpdate();
+      if(script_ptr->is_valid)
+      {
+        script_ptr->script->entity = { e, this };
+        script_ptr->script->timestep = ts;
+        REAL_CORE_ERROR("entity id : {0}", (uint32_t)e);
+        script_ptr->script->onUpdate();
+      }
     });
-    
+    }
+    {
+    REAL_PROFILE_SCOPE("Updating physics params");
     m_registry.view<MovmentComponent, RigidBody2DComponent>().each([&](auto e, MovmentComponent& mc, RigidBody2DComponent& rb2dc)
     {
-      auto* body = rb2dc.body;
-      body->SetLinearVelocity({ mc.linear_velocity.x, mc.linear_velocity.y });
-      body->SetAngularVelocity(mc.angular_velocity);
-      //Vec2 position(body->GetPosition().x, body->GetPosition().y);
-      //tc.position = { position, tc.position.z };
-      //tc.rotation.z = body->GetAngle();
+      b2Body_SetTransform(rb2dc.body, { mc.new_transform.x, mc.new_transform.y }, { std::sin(mc.new_angle), std::cos(mc.new_angle)});
+    });
+    
+    m_registry.view<LinearImpulseComponent, RigidBody2DComponent>().each([&](auto e, auto& lic, auto& rb2dc)
+    {
+      float E = 0.01;
+      if((lic.point.x - E > 0  && lic.point.x + E < 0) || (lic.point.y - E > 0  && lic.point.y + E < 0))
+        b2Body_ApplyLinearImpulse(rb2dc.body, {lic.magnitude.x, lic.magnitude.y}, b2Vec2(lic.point.x, lic.point.y), true);
+      else [[likely]]
+        b2Body_ApplyLinearImpulseToCenter(rb2dc.body, {lic.magnitude.x, lic.magnitude.y}, true);
     });
 
-    int vel_iters = 6;
-    int pos_iters = 2;
-    m_physics_world->Step(ts, vel_iters, pos_iters);
+    m_registry.view<ForceComponent, RigidBody2DComponent>().each([&](auto e, auto& fc, auto& rb2dc)
+    {
+      float E = 0.01;
+      if((fc.point.x - E > 0  && fc.point.x + E < 0) || (fc.point.y - E > 0  && fc.point.y + E < 0))
+        b2Body_ApplyForce(rb2dc.body, {fc.magnitude.x, fc.magnitude.y}, b2Vec2(fc.point.x, fc.point.y), true);
+      else [[likely]]
+        b2Body_ApplyForceToCenter(rb2dc.body, {fc.magnitude.x, fc.magnitude.y}, true);
+    });
+
+    m_registry.view<AngularImpulseComponent, RigidBody2DComponent>().each([&](auto e, auto& aic, auto& rb2dc)
+    {
+      b2Body_ApplyAngularImpulse(rb2dc.body, aic.magnitude, true);
+    });
+
+    m_registry.view<TorqueComponent, RigidBody2DComponent>().each([&](auto e, auto& tc, auto& rb2dc)
+    {
+      b2Body_ApplyTorque(rb2dc.body, tc.magnitude, true);
+    });
+    }
     
+    {
+      REAL_PROFILE_SCOPE("physics => Step");
+      b2World_Step(m_physics_world, ts, 4);
+    }
+    {
+      REAL_PROFILE_SCOPE("retriving physics data");
     m_registry.view<TransformComponent, RigidBody2DComponent>().each([&](auto e, TransformComponent& tc, RigidBody2DComponent& rb2dc)
     {
-      auto* body = rb2dc.body;
-      body->SetGravityScale(rb2dc.gravity_scale);
-      Vec2 position(body->GetPosition().x, body->GetPosition().y);
-      tc.position = { position, tc.position.z };
-      tc.rotation.z = body->GetAngle();
+      b2Body_SetGravityScale(rb2dc.body, rb2dc.gravity_scale);
+      auto position = b2Body_GetPosition(rb2dc.body);
+      tc.position = { position.x, position.y, tc.position.z };
+      tc.rotation.z = std::asin(b2Body_GetRotation(rb2dc.body).s);
     });
-
+    }
     SceneCamera* camera = nullptr;
     Mat4 camera_trans;
     {
+      REAL_PROFILE_SCOPE("Camera => onUpdate");
       auto view = m_registry.view<TransformComponent, CameraComponent>();
       for(const auto& e : view)
       {
@@ -333,12 +378,15 @@ namespace Real
         }
       }
     }
+    
+
     if(camera) [[likely]]
     {
       Renderer2D::beginScene(*camera, camera_trans);
       
       //Quads
       {
+        REAL_PROFILE_SCOPE("Render Quads");
         auto view = m_registry.view<TransformComponent, SpriteComponent>();
         for(const auto& e : view)
         {
@@ -476,10 +524,22 @@ namespace Real
     {
       //script.script.entity = { e, this };
       auto script_asset = AssetManager::get<AssetManager::ScriptAsset>(script_comp.script_handle);
-      script_asset->script->onDestroy();
+      if(script_asset->is_valid)
+        script_asset->script->onDestroy();
     });
 
-    delete m_physics_world;
-    m_physics_world = nullptr;
+    b2DestroyWorld(m_physics_world);
+    m_physics_world = b2_nullWorldId;
   }
+  
+  bool operator==(const ARef<Scene>& lhs, const ARef<Scene>& rhs)
+  {
+    return lhs->getUUID() == rhs->getUUID();
+  }
+  
+bool operator!=(const ARef<Scene>& lhs, const ARef<Scene>& rhs)
+  {
+    return lhs->getUUID() != rhs->getUUID();
+  }
+
 }

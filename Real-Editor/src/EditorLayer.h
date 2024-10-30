@@ -3,11 +3,16 @@
 
 
 #include <Real-Engine/Real-Engine.h>
+#include "EditorEvents/EditorEvents.h"
+#include "EditorEvents/ProjectEvents.h"
 #include "Panels/SceneHierarchy.h"
 #include "Panels/Inspector.h"
 #include "HelperWindows.h"
 #include "Panels/ContentBrowser.h"
+#include "Panels/ErrorModal.h"
+#include "Panels/ProjectPanel.h"
 #include "EditorCamera.h"
+#include "SceneTab.h"
 
 
 namespace Real
@@ -15,7 +20,7 @@ namespace Real
   class EditorLayer : public Real::Layer
   {
   public:
-    enum class SceneState {Stop, Play};
+    enum class SceneState {Stop, Play, Invalid};
     enum class GizmoOp 
     {
       TranslateX       = (1u << 0),
@@ -53,6 +58,8 @@ namespace Real
     void onGuiUpdate() override;
   private:
     void changeScene(UUID id);
+    void changeScene(const ARef<Scene>& s);
+    void reloadScene();
     void onScenePlay();
     void onSceneStop();
     
@@ -71,15 +78,27 @@ namespace Real
     bool onKeyPressedEvent(KeyPressedEvent& e);
     bool onKeyReleasedEvent(KeyReleasedEvent& e);
     void handelCMD(int key);
+
+    void onEditorEvent(EditorEvent& e);
+    bool onSceneChangedCall(SceneChangedEvent& e);
+    bool onScenePlayCall(ScenePlayEvent& e);
+    bool onSceneStopCall(SceneStopEvent& e);
+    bool onProjectSetCall(ProjectSetEvent& e);
+
+    bool showSaveScene(bool&);
+    void showSaveNewScne(bool&);
   private:
     Timestep m_time_step;
     UUID m_scene_handle = UUID::invalid;
     SceneState m_scene_state = SceneState::Stop;
     bool m_show_imgui_demo = true;
     bool m_default_editor = false;
+    bool m_scene_selection = false;
+    bool m_viewport_focused = false;
     std::string m_default_font;
     uint8_t m_default_font_size = 18;
     int m_mouse_picked_entity_id = -1;
+    uint32_t m_sub_id;
     EditorCamera m_camera;
 
     std::string m_imgui_ini_path;
@@ -91,11 +110,12 @@ namespace Real
     
     ARef<Real::FrameBuffer> m_frame_buff;
     
+    ProjectPanel m_proj_panel;
     ContentBrowser m_content_browser;
     SceneHierarchy m_scene_hierarchy_panel;
     Inspector m_inspector_panel;
 
-
+    std::vector<SceneTab> m_opend_scenes;
     std::unordered_map<std::string, Scoped<HelperWindow>> m_helper_windows;
     std::unordered_map<std::string, Vec4> m_colors;
   private:

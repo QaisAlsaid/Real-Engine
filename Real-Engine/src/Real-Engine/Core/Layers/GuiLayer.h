@@ -15,10 +15,15 @@ namespace Real
     virtual void onAttach()      override;
     virtual void onDetach()      override;
     virtual void onGuiUpdate()   override;
+    virtual void onEvent(Event&) override;
     void         begin();
     void         end();
+    
+    inline void setBlocking(bool b) { m_blocking = b;    }
+    inline bool isBlocking()        { return m_blocking; }
   private:
-    float   m_time = 0.0f;
+    float m_time = 0.0f;
+    bool  m_blocking = false;
   private:
     void init();
   };

@@ -11,7 +11,8 @@ namespace Real
    NONE = 0,
    WindowClosed, WindowResized, WindowFocused, WindowLostFocus, WindowMoved,
    KeyPressed, KeyReleased,
-   MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
+   MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled, 
+   ScriptErrorEvent
   };
 
   enum EventCategory

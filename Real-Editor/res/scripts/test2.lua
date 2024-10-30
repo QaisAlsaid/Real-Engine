@@ -1,18 +1,18 @@
-local script = Karen.Script.new()
+local test2 = {}
+local script = Real.Script.new()
 local entity = script.entity
 local num = 0
-
-
 function script:onCreate()
   print("created entity id: ", entity:getId())
+  entity = script.entity
 end
 
-
+c = 100
 function script:onUpdate()
-  local trans = entity:getTransform()
-  local rot = trans.rotation
-  rot.z = rot.z + num --script2:getTimestep()
-  num = num + 0.001
+  c = c + 1
+  t = script:getTimestep():getTime()
+  print(math.sin(t))
+  entity:getSprite().color = Real.Vec4.new(1)--( math.sin(t) * 100 ) - 0.6
 end
 
 function script:onDestroy()

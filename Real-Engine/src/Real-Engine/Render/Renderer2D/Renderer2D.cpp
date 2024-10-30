@@ -381,9 +381,31 @@ namespace Real
      std::ranges::sort(s_data->quad_base, s_data->quad_ptr, 
       [](const Quad& lhs, const Quad& rhs)
       {
+        //auto f = s_data->camera_view[3][2] - lhs.vertices[0].position.z;
+        //auto s = s_data->camera_view[3][2] - rhs.vertices[0].position.z; 
+        //return std::abs(f) < std::abs(s);  
         auto f = s_data->camera_view[3][2] - lhs.vertices[0].position.z;
         auto s = s_data->camera_view[3][2] - rhs.vertices[0].position.z; 
-        return std::abs(f) < std::abs(s);  
+        if((lhs.vertices[0].color.a > 250) && (rhs.vertices[0].color.a > 255)) // both not transparent
+        { 
+          return std::abs(f) < std::abs(s);
+        }
+        else if((lhs.vertices[0].color.a < 250) ^ (rhs.vertices[0].color.a < 250)) //one is transparent
+        {
+          if(lhs.vertices[0].color.a < 250) // lhs is transparent
+          {
+            return false;
+          }
+          else //if(rhs.vertices[0].color.a < 250) // rhs is transparent
+          {
+            return true;
+          }
+        }
+        else //both are transparent
+        {
+          return std::abs(f) < std::abs(s);
+        }
+
       });
 
 
@@ -393,7 +415,7 @@ namespace Real
   //  for(size_t j = 0; j < count - 1 - i; ++j)
     //  if(arr[j] > arr[j+1])
       //  std::swap(arr[j], arr[j+1]);  
-        REAL_CORE_WARN("vertex count: {0}, quad_count: {1}, first: << pos: {2}, color: {3}, tux_coord: {4}, tux_idx: {5} >>", count, count/4, arr->vertices[0].position, arr->vertices[0].color, arr->vertices[0].tux_coord, arr->vertices[0].tux_idx);
+      //  REAL_CORE_WARN("vertex count: {0}, quad_count: {1}, first: << pos: {2}, color: {3}, tux_coord: {4}, tux_idx: {5} >>", count, count/4, arr->vertices[0].position, arr->vertices[0].color, arr->vertices[0].tux_coord, arr->vertices[0].tux_idx);
     //std::sort(s_data->quad_vertex_base, s_data->quad_vertex_base + (data_size / sizeof(QuadVertex)));
 
       //s_data->quad_vertex_arr->getIndexBuffer();
@@ -420,16 +442,33 @@ namespace Real
     
     auto* arr = s_data->circle_base;
     uint32_t count = data_size / sizeof(CircleVertex);
-     
     std::ranges::sort(s_data->circle_base, s_data->circle_ptr, 
       [](const Circle& lhs, const Circle& rhs)
       {
         auto f = s_data->camera_view[3][2] - lhs.vertices[0].position.z;
         auto s = s_data->camera_view[3][2] - rhs.vertices[0].position.z; 
-        return std::abs(f) < std::abs(s);  
+        if((lhs.vertices[0].color.a > 250) && (rhs.vertices[0].color.a > 255)) // both not transparent
+        { 
+          return std::abs(f) < std::abs(s);
+        }
+        else if((lhs.vertices[0].color.a < 250) ^ (rhs.vertices[0].color.a < 250)) //one is transparent
+        {
+          if(lhs.vertices[0].color.a < 250) // lhs is transparent
+          {
+            return true;
+          }
+          else //if(rhs.vertices[0].color.a < 250) // rhs is transparent
+          {
+            return false;
+          }
+        }
+        else //both are transparent
+        {
+          return std::abs(f) < std::abs(s);
+        }
       });
 
-    REAL_CORE_WARN("vertex count: {0}, quad_count: {1}, first: << pos: {2}, color: {3} >>", count, count/4, arr->vertices[0].position, arr->vertices[0].color);
+    //REAL_CORE_WARN("vertex count: {0}, quad_count: {1}, first: << pos: {2}, color: {3} >>", count, count/4, arr->vertices[0].position, arr->vertices[0].color);
     
     s_data->circle_vertex_buff->setData(data_size, s_data->circle_base);
 

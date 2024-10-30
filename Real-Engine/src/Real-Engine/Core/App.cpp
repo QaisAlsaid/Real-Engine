@@ -1,3 +1,4 @@
+#include "imgui.h"
 #include "pch.h"
 #include "Real-Engine/Core/Timestep.h"
 #include "Real-Engine/Core/Events/AppEvents.h"
@@ -30,7 +31,7 @@ namespace Real
     s_instance = this;
     m_window = std::unique_ptr<Window>(Window::create());
     m_window->setEventCallbackFunction(BIND_EVENT_FUNCTION(App::onEvent));
-    m_gui_layer = new GuiLayer("Base GuiLayer");
+    m_gui_layer = new GuiLayer("BaseGuiLayer");
     m_gui_layer->activate();
     pushOverlay(m_gui_layer);
     Lua::init(); 
@@ -81,7 +82,6 @@ namespace Real
         if((*it)->isActive())
         {
           (*it)->onUpdate(ts);
-          REAL_CORE_INFO("called onUpdate for Layer: {0}, isActive: {1}",(*it)->getName(), (*it)->isActive());
         }
       }
 
@@ -92,7 +92,6 @@ namespace Real
         if((*it)->isActive() && (*it)->isGuiActive())
         {
           (*it)->onGuiUpdate();
-          REAL_CORE_INFO("called onGuiUpdate for Layer: {0}, isActive: {1}, isGuiActive: {2}",(*it)->getName(), (*it)->isActive(), (*it)->isGuiActive());
         }
       }
       m_gui_layer->end();
@@ -120,13 +119,15 @@ namespace Real
   void App::pushLayer(Layer* layer)
   {
     m_layers.pushLayer(layer);
-    layer->onAttach();
+    if(layer->isActive())
+      layer->onAttach();
   }
 
   void App::pushOverlay(Layer* layer)
   {
     m_layers.pushOverlay(layer);
-    layer->onAttach();
+    if(layer->isActive())
+      layer->onAttach();
   }
 
   void App::popLayer(Layer* layer)
@@ -152,10 +153,5 @@ namespace Real
     }
     REAL_CORE_WARN("Layer: {0} Not found in stack", name);
     return nullptr;
-  }
-
-  void App::pushExportVariable(const char* name, const ExportType& et, UUID e_id)
-  {
-    m_export_vars[e_id].push_back({ name, et }); 
   }
 }

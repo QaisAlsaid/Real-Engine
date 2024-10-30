@@ -8,16 +8,11 @@
 #include "Real-Engine/Core/Layers/GuiLayer.h"
 #include "Real-Engine/Core/Events/Events.h"
 #include "Real-Engine/Core/AssetManager.h"
-#include "ExportType.h"
+#include "Export.h"
 
 
 namespace Real
 {
-  typedef std::pair<const char*, ExportType> ExportedPair;
-  typedef std::vector<ExportedPair> ExportedVector;
-  typedef std::map<uint64_t, ExportedVector> ExportedMap;
-  
-
   class REAL_API App
   {
   public:
@@ -47,25 +42,14 @@ namespace Real
 
     //O(N)
     Layer* getLayer(const std::string& name);
-    
-    void pushExportVariable(const char* as, const ExportType& et, UUID entity_id);
-    const ExportedMap& getExportedVariables() const  { return m_export_vars; }
-    ExportedMap&       getExportedVariables()        { return m_export_vars; }
-    const ExportedVector*    getExportVariablesFor(UUID id)
-    {
-      if(m_export_vars.find(id) != m_export_vars.end())
-      {
-        return &m_export_vars.at(id);
-      }
-      return nullptr;
-    }
+    inline GuiLayer* getGuiLayer() const { return m_gui_layer; }
+
   private:
     float m_last_time = 0.0f;
     Scoped<Window> m_window;
     GuiLayer* m_gui_layer = nullptr;
     bool m_running = true;
     LayerStack m_layers;
-    ExportedMap m_export_vars;
     static App* s_instance;
   protected:
     void pushLayer(Layer* layer);

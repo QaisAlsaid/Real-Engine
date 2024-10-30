@@ -244,6 +244,14 @@ namespace Real
           ccc.restitution = ccc_n["Restitution"].as<float>();
           ccc.restitution_threshold = ccc_n["RestitutionThreshold"].as<float>();
         }
+
+        const auto& script_n = entity["ScriptComponent"];
+        if(script_n)
+        {
+          auto& script = e.addComponent<ScriptComponent>();
+          script.script_handle = script_n["ScriptHandle"].as<uint64_t>();
+        }
+
       }
     }
     return true;
@@ -351,6 +359,15 @@ namespace Real
       emitter << Key << "Friction" << ccc.friction;
       emitter << Key << "Restitution" << ccc.restitution;
       emitter << Key << "RestitutionThreshold" << ccc.restitution_threshold;
+      emitter << EndMap;
+    }
+
+    if(e.hasComponent<ScriptComponent>())
+    {
+      emitter << Key << "ScriptComponent" << BeginMap;
+
+      auto& script = e.getComponent<ScriptComponent>();
+      emitter << Key << "ScriptHandle" << script.script_handle;
       emitter << EndMap;
     }
 
